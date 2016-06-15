@@ -15,17 +15,22 @@
 package config
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
 
 	"github.com/flike/kingshard/core/yaml"
 )
 
+//Mysql User/Password 对
+type AuthInfo struct {
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+}
+
 //整个config文件对应的结构
 type Config struct {
 	Addr        string       `yaml:"addr"`
-	User        string       `yaml:"user"`
-	Password    string       `yaml:"password"`
 	LogPath     string       `yaml:"log_path"`
 	LogLevel    string       `yaml:"log_level"`
 	LogSql      string       `yaml:"log_sql"`
@@ -34,8 +39,22 @@ type Config struct {
 	BlsFile     string       `yaml:"blacklist_sql_file"`
 	Charset     string       `yaml:"proxy_charset"`
 	Nodes       []NodeConfig `yaml:"nodes"`
+	Users       []AuthInfo   `yaml:"users"`
+	Schema      SchemaConfig `yaml:"schema"`
+}
 
-	Schema SchemaConfig `yaml:"schema"`
+func (config *Config) GetAuthInfo(user string) (*AuthInfo, error) {
+
+	for _, item := range config.Users {
+
+		if item.User == user {
+			return &item, nil
+		}
+
+	}
+
+	return nil, errors.New("user not exists")
+
 }
 
 //node节点对应的配置
@@ -44,11 +63,24 @@ type NodeConfig struct {
 	DownAfterNoAlive int    `yaml:"down_after_noalive"`
 	MaxConnNum       int    `yaml:"max_conns_limit"`
 
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
+	Users []AuthInfo `yaml:"users"`
 
 	Master string `yaml:"master"`
 	Slave  string `yaml:"slave"`
+}
+
+func (config *NodeConfig) GetAuthInfo(user string) (*AuthInfo, error) {
+
+	for _, item := range config.Users {
+
+		if item.User == user {
+			return &item, nil
+		}
+
+	}
+
+	return nil, errors.New("user not exists")
+
 }
 
 //schema对应的结构体
