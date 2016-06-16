@@ -277,7 +277,6 @@ func (c *ClientConn) Run() {
 
 		c.Close()
 	}()
-
 	for {
 		data, err := c.readPacket()
 

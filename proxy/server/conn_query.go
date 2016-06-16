@@ -16,6 +16,7 @@ package server
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 	"sync"
@@ -93,6 +94,7 @@ func (c *ClientConn) handleQuery(sql string) (err error) {
 	case *sqlparser.AdminHelp:
 		return c.handleAdminHelp(v)
 	case *sqlparser.UseDB:
+		fmt.Fprintln(os.Stderr, "use db")
 		return c.handleUseDB(v)
 	case *sqlparser.SimpleSelect:
 		return c.handleSimpleSelect(v)

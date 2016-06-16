@@ -27,7 +27,7 @@ proxy_charset: utf8
 nodes :
 -
     name : node1
-    max_conns_limit : 32
+    max_conns_limit : 5
     users:
     -
       user: root
