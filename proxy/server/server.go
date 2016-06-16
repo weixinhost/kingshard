@@ -205,8 +205,8 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	s.cfg = cfg
 	s.counter = new(Counter)
 	s.addr = cfg.Addr
-	s.user = cfg.User
-	s.password = cfg.Password
+	//	s.user = cfg.Users[0].User
+	//	s.password = cfg.Users[0].Password
 	atomic.StoreInt32(&s.logSqlIndex, 0)
 	s.logSql[s.logSqlIndex] = cfg.LogSql
 	atomic.StoreInt32(&s.slowLogTimeIndex, 0)

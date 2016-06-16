@@ -405,7 +405,7 @@ func (c *ClientConn) handleShowProxyConfig() (*mysql.Resultset, error) {
 	}
 
 	rows = append(rows, []string{"Addr", c.proxy.cfg.Addr})
-	rows = append(rows, []string{"User", c.proxy.cfg.User})
+	rows = append(rows, []string{"User", c.proxy.cfg.Users[0].User})
 	rows = append(rows, []string{"LogPath", c.proxy.cfg.LogPath})
 	rows = append(rows, []string{"LogLevel", c.proxy.cfg.LogLevel})
 	rows = append(rows, []string{"LogSql", c.proxy.logSql[c.proxy.logSqlIndex]})
@@ -445,31 +445,33 @@ func (c *ClientConn) handleShowNodeConfig() (*mysql.Resultset, error) {
 
 	//var nodeRows [][]string
 	for name, node := range c.schema.nodes {
+		db := node.Master.GetRandomDB()
 		//"master"
 		rows = append(
 			rows,
 			[]string{
 				name,
-				node.Master.Addr(),
+				db.Addr(),
 				"master",
-				node.Master.State(),
+				db.State(),
 				fmt.Sprintf("%v", time.Unix(node.LastMasterPing, 0)),
 				strconv.Itoa(node.Cfg.MaxConnNum),
-				strconv.Itoa(node.Master.IdleConnCount()),
+				strconv.Itoa(db.IdleConnCount()),
 			})
 		//"slave"
 		for _, slave := range node.Slave {
 			if slave != nil {
+				db := slave.GetRandomDB()
 				rows = append(
 					rows,
 					[]string{
 						name,
-						slave.Addr(),
+						db.Addr(),
 						"slave",
-						slave.State(),
+						db.State(),
 						fmt.Sprintf("%v", time.Unix(node.LastSlavePing, 0)),
 						strconv.Itoa(node.Cfg.MaxConnNum),
-						strconv.Itoa(slave.IdleConnCount()),
+						strconv.Itoa(db.IdleConnCount()),
 					})
 			}
 		}

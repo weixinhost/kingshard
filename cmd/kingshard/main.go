@@ -94,6 +94,8 @@ func main() {
 		setLogLevel(cfg.LogLevel)
 	}
 
+	fmt.Println(cfg)
+
 	var svr *server.Server
 	svr, err = server.NewServer(cfg)
 	if err != nil {

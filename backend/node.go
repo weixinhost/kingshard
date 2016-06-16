@@ -15,6 +15,7 @@
 package backend
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -37,9 +38,9 @@ type Node struct {
 	Cfg config.NodeConfig
 
 	sync.RWMutex
-	Master *DB
+	Master *UserPool
 
-	Slave          []*DB
+	Slave          []*UserPool
 	LastSlaveIndex int
 	RoundRobinQ    []int
 	SlaveWeights   []int
@@ -73,7 +74,7 @@ func (n *Node) String() string {
 }
 
 func (n *Node) GetMasterConn() (*BackendConn, error) {
-	db := n.Master
+	db := n.Master.GetRandomDB()
 	if db == nil {
 		return nil, errors.ErrNoMasterConn
 	}
@@ -103,7 +104,7 @@ func (n *Node) GetSlaveConn() (*BackendConn, error) {
 }
 
 func (n *Node) checkMaster() {
-	db := n.Master
+	db := n.Master.GetRandomDB()
 	if db == nil {
 		golog.Error("Node", "checkMaster", "Master is no alive", 0)
 		return
@@ -137,8 +138,17 @@ func (n *Node) checkSlave() {
 		n.RUnlock()
 		return
 	}
-	slaves := make([]*DB, len(n.Slave))
-	copy(slaves, n.Slave)
+
+	var slaves []*DB
+
+	for _, item := range n.Slave {
+		dbs := item.GetPools()
+		if dbs == nil {
+			continue
+		}
+		slaves = append(slaves, dbs...)
+	}
+
 	n.RUnlock()
 
 	for i := 0; i < len(slaves); i++ {
@@ -168,7 +178,7 @@ func (n *Node) checkSlave() {
 }
 
 func (n *Node) AddSlave(addr string) error {
-	var db *DB
+	var pool *UserPool
 	var weight int
 	var err error
 	if len(addr) == 0 {
@@ -177,9 +187,18 @@ func (n *Node) AddSlave(addr string) error {
 	n.Lock()
 	defer n.Unlock()
 	for _, v := range n.Slave {
-		if v.addr == addr {
-			return errors.ErrSlaveExist
+		dbs := v.GetPools()
+
+		if dbs == nil {
+			continue
 		}
+
+		for _, item := range dbs {
+			if item.addr == addr {
+				return errors.ErrSlaveExist
+			}
+		}
+
 	}
 	addrAndWeight := strings.Split(addr, WeightSplit)
 	if len(addrAndWeight) == 2 {
@@ -191,10 +210,10 @@ func (n *Node) AddSlave(addr string) error {
 		weight = 1
 	}
 	n.SlaveWeights = append(n.SlaveWeights, weight)
-	if db, err = n.OpenDB(addrAndWeight[0]); err != nil {
+	if pool, err = n.OpenDB(addrAndWeight[0]); err != nil {
 		return err
 	} else {
-		n.Slave = append(n.Slave, db)
+		n.Slave = append(n.Slave, pool)
 		n.InitBalancer()
 		return nil
 	}
@@ -209,7 +228,8 @@ func (n *Node) DeleteSlave(addr string) error {
 		return errors.ErrNoSlaveDB
 	}
 	for i = 0; i < slaveCount; i++ {
-		if n.Slave[i].addr == addr {
+		db := n.Slave[i].GetRandomDB()
+		if db != nil && db.addr == addr {
 			break
 		}
 	}
@@ -223,10 +243,11 @@ func (n *Node) DeleteSlave(addr string) error {
 		return nil
 	}
 
-	s := make([]*DB, 0, slaveCount-1)
+	s := make([]*UserPool, 0, slaveCount-1)
 	sw := make([]int, 0, slaveCount-1)
 	for i = 0; i < slaveCount; i++ {
-		if n.Slave[i].addr != addr {
+		db := n.Slave[i].GetRandomDB()
+		if db != nil && db.addr != addr {
 			s = append(s, n.Slave[i])
 			sw = append(sw, n.SlaveWeights[i])
 		}
@@ -238,17 +259,30 @@ func (n *Node) DeleteSlave(addr string) error {
 	return nil
 }
 
-func (n *Node) OpenDB(addr string) (*DB, error) {
-	db, err := Open(addr, n.Cfg.User, n.Cfg.Password, "", n.Cfg.MaxConnNum)
-	return db, err
+func (n *Node) OpenDB(addr string) (*UserPool, error) {
+
+	users := n.Cfg.Users
+
+	pool := NewUserPool()
+
+	for _, item := range users {
+		_, err := pool.Open(addr, item.User, item.Password, "", n.Cfg.MaxConnNum)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return pool, nil
 }
 
-func (n *Node) UpDB(addr string) (*DB, error) {
-	db, err := n.OpenDB(addr)
+func (n *Node) UpDB(addr string) (*UserPool, error) {
+	pool, err := n.OpenDB(addr)
 
 	if err != nil {
 		return nil, err
 	}
+
+	db := pool.GetRandomDB()
 
 	if err := db.Ping(); err != nil {
 		db.Close()
@@ -256,40 +290,41 @@ func (n *Node) UpDB(addr string) (*DB, error) {
 		return nil, err
 	}
 	atomic.StoreInt32(&(db.state), Up)
-	return db, nil
+	return pool, nil
 }
 
 func (n *Node) UpMaster(addr string) error {
-	db, err := n.UpDB(addr)
+	pool, err := n.UpDB(addr)
 	if err != nil {
 		golog.Error("Node", "UpMaster", err.Error(), 0)
 	}
-	n.Master = db
+	n.Master = pool
 	return err
 }
 
 func (n *Node) UpSlave(addr string) error {
-	db, err := n.UpDB(addr)
+	pool, err := n.UpDB(addr)
 	if err != nil {
 		golog.Error("Node", "UpSlave", err.Error(), 0)
 	}
 
 	n.Lock()
 	for k, slave := range n.Slave {
-		if slave.addr == addr {
-			n.Slave[k] = db
+		db := slave.GetRandomDB()
+		if db != nil && db.addr == addr {
+			n.Slave[k] = pool
 			n.Unlock()
 			return nil
 		}
 	}
-	n.Slave = append(n.Slave, db)
+	n.Slave = append(n.Slave, pool)
 	n.Unlock()
 
 	return err
 }
 
 func (n *Node) DownMaster(addr string, state int32) error {
-	db := n.Master
+	db := n.Master.GetRandomDB()
 	if db == nil || db.addr != addr {
 		return errors.ErrNoMasterDB
 	}
@@ -305,8 +340,15 @@ func (n *Node) DownSlave(addr string, state int32) error {
 		n.RUnlock()
 		return errors.ErrNoSlaveDB
 	}
-	slaves := make([]*DB, len(n.Slave))
-	copy(slaves, n.Slave)
+	slaves := make([]*DB, 0)
+
+	for _, item := range n.Slave {
+		dbs := item.GetPools()
+
+		if dbs != nil {
+			slaves = append(slaves, dbs...)
+		}
+	}
 	n.RUnlock()
 
 	//slave is *DB
@@ -327,12 +369,13 @@ func (n *Node) ParseMaster(masterStr string) error {
 	}
 
 	n.Master, err = n.OpenDB(masterStr)
+	fmt.Println(n.Master, err)
 	return err
 }
 
 //slaveStr(127.0.0.1:3306@2,192.168.0.12:3306@3)
 func (n *Node) ParseSlave(slaveStr string) error {
-	var db *DB
+	var pool *UserPool
 	var weight int
 	var err error
 
@@ -342,7 +385,7 @@ func (n *Node) ParseSlave(slaveStr string) error {
 	slaveStr = strings.Trim(slaveStr, SlaveSplit)
 	slaveArray := strings.Split(slaveStr, SlaveSplit)
 	count := len(slaveArray)
-	n.Slave = make([]*DB, 0, count)
+	n.Slave = make([]*UserPool, 0, count)
 	n.SlaveWeights = make([]int, 0, count)
 
 	//parse addr and weight
@@ -357,10 +400,10 @@ func (n *Node) ParseSlave(slaveStr string) error {
 			weight = 1
 		}
 		n.SlaveWeights = append(n.SlaveWeights, weight)
-		if db, err = n.OpenDB(addrAndWeight[0]); err != nil {
+		if pool, err = n.OpenDB(addrAndWeight[0]); err != nil {
 			return err
 		}
-		n.Slave = append(n.Slave, db)
+		n.Slave = append(n.Slave, pool)
 	}
 	n.InitBalancer()
 	return nil

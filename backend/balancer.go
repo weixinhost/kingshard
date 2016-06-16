@@ -87,7 +87,7 @@ func (n *Node) GetNextSlave() (*DB, error) {
 	}
 	if queueLen == 1 {
 		index = n.RoundRobinQ[0]
-		return n.Slave[index], nil
+		return n.Slave[index].GetRandomDB(), nil
 	}
 
 	n.LastSlaveIndex = n.LastSlaveIndex % queueLen
@@ -98,5 +98,5 @@ func (n *Node) GetNextSlave() (*DB, error) {
 	db := n.Slave[index]
 	n.LastSlaveIndex++
 	n.LastSlaveIndex = n.LastSlaveIndex % queueLen
-	return db, nil
+	return db.GetRandomDB(), nil
 }

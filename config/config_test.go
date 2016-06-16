@@ -24,31 +24,42 @@ func TestConfig(t *testing.T) {
 	var testConfigData = []byte(
 		`
 addr : 0.0.0.0:9696
-user : root
-password : root
 log_level : error
+users:
+-
+  user: user_a
+  password: pass_a
 
 nodes :
 - 
-  name : node1 
+  name : node1
   down_after_noalive : 300
   max_conns_limit : 16
-  user: root
-  password: root
   master : 127.0.0.1:3306
   slave : 127.0.0.1:4306
+  users:
+  -
+   user: user_b
+   password: pass_b
 - 
   name : node2
-  user: root
   master : 127.0.0.1:3307
+  users:
+  -
+   user: user_c
 
 - 
-  name : node3 
+  name : node3
   down_after_noalive : 300
   max_conns_limit : 16
-  user: root
-  password: root
   master : 127.0.0.1:3308
+  users:
+  -
+    user: user_d
+    password: pass_d
+  -
+    user: user_e
+    password: pass_e
 
 schema :
   db : kingshard 
@@ -83,9 +94,12 @@ schema :
 		Name:             "node1",
 		DownAfterNoAlive: 300,
 		MaxConnNum:       16,
-
-		User:     "root",
-		Password: "root",
+		Users: []AuthInfo{
+			AuthInfo{
+				User:     "user_b",
+				Password: "pass_b",
+			},
+		},
 
 		Master: "127.0.0.1:3306",
 		Slave:  "127.0.0.1:4306",
@@ -98,8 +112,12 @@ schema :
 
 	testNode_2 := NodeConfig{
 		Name:   "node2",
-		User:   "root",
 		Master: "127.0.0.1:3307",
+		Users: []AuthInfo{
+			AuthInfo{
+				User: "user_c",
+			},
+		},
 	}
 
 	if !reflect.DeepEqual(cfg.Nodes[1], testNode_2) {
@@ -147,8 +165,11 @@ schema :
 		t.Fatal("schema must equal")
 	}
 
-	if cfg.LogLevel != "error" || cfg.User != "root" ||
-		cfg.Password != "root" || cfg.Addr != "0.0.0.0:9696" {
+	if cfg.Users[0].User != "user_a" || cfg.Users[0].Password != "pass_a" {
+		t.Fatal("Top Config user / password not equal.")
+	}
+
+	if cfg.LogLevel != "error" || cfg.Addr != "0.0.0.0:9696" {
 		t.Fatal("Top Config not equal.")
 	}
 }
