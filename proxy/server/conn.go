@@ -228,8 +228,18 @@ func (c *ClientConn) readHandshakeResponse() error {
 
 	authConfig, err := c.proxy.cfg.GetAuthInfo(c.user)
 
+	if err != nil {
+
+		golog.Error("ClientConn", "readHandshakeResponse", "error", 0,
+			"auth", auth,
+			"client_user", c.user,
+		)
+		return mysql.NewDefaultError(mysql.ER_ACCESS_DENIED_ERROR, c.user, c.c.RemoteAddr().String(), "Yes")
+
+	}
+
 	checkAuth := mysql.CalcPassword(c.salt, []byte(authConfig.Password))
-	if err != nil || !bytes.Equal(auth, checkAuth) {
+	if !bytes.Equal(auth, checkAuth) {
 		golog.Error("ClientConn", "readHandshakeResponse", "error", 0,
 			"auth", auth,
 			"checkAuth", checkAuth,

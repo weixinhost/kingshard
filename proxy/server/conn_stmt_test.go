@@ -21,7 +21,7 @@ import (
 func TestStmt_DropTable(t *testing.T) {
 	server := newTestServer(t)
 	n := server.nodes["node1"]
-	c, err := n.GetMasterConn()
+	c, err := n.GetMasterConn(n.Cfg.Users[0].User)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,7 +45,7 @@ func TestStmt_CreateTable(t *testing.T) {
 
 	server := newTestServer(t)
 	n := server.nodes["node1"]
-	c, err := n.GetMasterConn()
+	c, err := n.GetMasterConn(n.Cfg.Users[0].User)
 	if err != nil {
 		t.Fatal(err)
 	}

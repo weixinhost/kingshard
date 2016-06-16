@@ -33,7 +33,8 @@ func TestConn_Handshake(t *testing.T) {
 func TestConn_DeleteTable(t *testing.T) {
 	server := newTestServer(t)
 	n := server.nodes["node1"]
-	c, err := n.GetMasterConn()
+
+	c, err := n.GetMasterConn(n.Cfg.Users[0].User)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,7 +60,7 @@ func TestConn_CreateTable(t *testing.T) {
 
 	server := newTestServer(t)
 	n := server.nodes["node1"]
-	c, err := n.GetMasterConn()
+	c, err := n.GetMasterConn(n.Cfg.Users[0].User)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -300,7 +301,7 @@ func TestConn_LastInsertId(t *testing.T) {
 	server := newTestServer(t)
 	n := server.nodes["node1"]
 
-	c1, err := n.GetMasterConn()
+	c1, err := n.GetMasterConn(n.Cfg.Users[0].User)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -344,7 +345,7 @@ func TestConn_LastInsertId(t *testing.T) {
 		}
 	}
 
-	c1, _ = n.GetMasterConn()
+	c1, _ = n.GetMasterConn(n.Cfg.Users[0].User)
 
 	if _, err := c1.Execute(`drop table if exists kingshard_test_conn_id`); err != nil {
 		t.Fatal(err)
