@@ -2,7 +2,24 @@ addr : 0.0.0.0:9696
 users:
 - 
  user: root
- password: root 
+ password: root
+
+-
+ user: user_1
+ password: pass_1
+
+-
+ user: user_2
+ password: pass_2
+
+-
+ user: user_3
+ password: pass_3
+
+-
+ user: user_4
+ password: pass_4
+
 log_level : debug
 #log_sql: off
 proxy_charset: utf8
@@ -15,6 +32,23 @@ nodes :
     -
       user: root
       password: root
+
+    -
+      user: user_1
+      password: pass_1
+
+    -
+      user: user_2
+      password: pass_2
+
+    -
+      user: user_3
+      password: pass_3
+      
+    -
+      user: user_4
+      password: pass_4
+
     master : 10.211.55.3:3306
 
 schema :

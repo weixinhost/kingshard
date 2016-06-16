@@ -58,7 +58,7 @@ func (c *ClientConn) handleFieldList(data []byte) error {
 
 	n := c.proxy.GetNode(nodeName)
 
-	co, err := n.GetMasterConn()
+	co, err := n.GetMasterConn(c.user)
 	defer c.closeConn(co, false)
 	if err != nil {
 		return err

@@ -223,18 +223,22 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	}
 
 	if err := s.parseBlackListSqls(); err != nil {
+		golog.Info("server", "NewServer", "parseBlackListSqls", 0, err.Error())
 		return nil, err
 	}
 
 	if err := s.parseAllowIps(); err != nil {
+		golog.Info("server", "NewServer", "parseAllowIps", 0, err.Error())
 		return nil, err
 	}
 
 	if err := s.parseNodes(); err != nil {
+		golog.Info("server", "NewServer", "parseNodes", 0, err.Error())
 		return nil, err
 	}
 
 	if err := s.parseSchema(); err != nil {
+		golog.Info("server", "NewServer", "parseSchema", 0, err.Error())
 		return nil, err
 	}
 
@@ -244,6 +248,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	s.listener, err = net.Listen(netProto, s.addr)
 
 	if err != nil {
+		golog.Info("server", "NewServer", "Listen", 0, err.Error())
 		return nil, err
 	}
 

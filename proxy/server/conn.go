@@ -355,7 +355,8 @@ func (c *ClientConn) useDB(db string) error {
 	nodeName := c.schema.rule.DefaultRule.Nodes[0]
 
 	n := c.proxy.GetNode(nodeName)
-	co, err := n.GetMasterConn()
+
+	co, err := n.GetMasterConn(c.user)
 	defer c.closeConn(co, false)
 	if err != nil {
 		return err

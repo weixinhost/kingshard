@@ -73,8 +73,8 @@ func (n *Node) String() string {
 	return n.Cfg.Name
 }
 
-func (n *Node) GetMasterConn() (*BackendConn, error) {
-	db := n.Master.GetRandomDB()
+func (n *Node) GetMasterConn(user string) (*BackendConn, error) {
+	db, _ := n.Master.GetDB(user)
 	if db == nil {
 		return nil, errors.ErrNoMasterConn
 	}
@@ -85,9 +85,9 @@ func (n *Node) GetMasterConn() (*BackendConn, error) {
 	return db.GetConn()
 }
 
-func (n *Node) GetSlaveConn() (*BackendConn, error) {
+func (n *Node) GetSlaveConn(user string) (*BackendConn, error) {
 	n.Lock()
-	db, err := n.GetNextSlave()
+	db, err := n.GetNextSlave(user)
 	n.Unlock()
 	if err != nil {
 		return nil, err
@@ -369,7 +369,7 @@ func (n *Node) ParseMaster(masterStr string) error {
 	}
 
 	n.Master, err = n.OpenDB(masterStr)
-	fmt.Println(n.Master, err)
+	fmt.Println("ParseMaster", n.Master, err)
 	return err
 }
 

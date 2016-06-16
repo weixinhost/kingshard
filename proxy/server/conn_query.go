@@ -106,12 +106,12 @@ func (c *ClientConn) handleQuery(sql string) (err error) {
 func (c *ClientConn) getBackendConn(n *backend.Node, fromSlave bool) (co *backend.BackendConn, err error) {
 	if !c.isInTransaction() {
 		if fromSlave {
-			co, err = n.GetSlaveConn()
+			co, err = n.GetSlaveConn(c.user)
 			if err != nil {
-				co, err = n.GetMasterConn()
+				co, err = n.GetMasterConn(c.user)
 			}
 		} else {
-			co, err = n.GetMasterConn()
+			co, err = n.GetMasterConn(c.user)
 		}
 		if err != nil {
 			golog.Error("server", "getBackendConn", err.Error(), 0)
@@ -122,7 +122,7 @@ func (c *ClientConn) getBackendConn(n *backend.Node, fromSlave bool) (co *backen
 		co, ok = c.txConns[n]
 
 		if !ok {
-			if co, err = n.GetMasterConn(); err != nil {
+			if co, err = n.GetMasterConn(c.user); err != nil {
 				return
 			}
 
