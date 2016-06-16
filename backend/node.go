@@ -324,13 +324,17 @@ func (n *Node) UpSlave(addr string) error {
 }
 
 func (n *Node) DownMaster(addr string, state int32) error {
-	db := n.Master.GetRandomDB()
-	if db == nil || db.addr != addr {
+	pool := n.Master.GetPools()
+
+	if pool == nil {
 		return errors.ErrNoMasterDB
 	}
 
-	db.Close()
-	atomic.StoreInt32(&(db.state), state)
+	for _, item := range pool {
+		item.Close()
+		atomic.StoreInt32(&(item.state), state)
+	}
+
 	return nil
 }
 

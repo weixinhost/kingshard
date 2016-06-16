@@ -665,6 +665,5 @@ func arrayToString(array []int) string {
 	for _, v := range array {
 		strArray = append(strArray, strconv.FormatInt(int64(v), 10))
 	}
-
 	return strings.Join(strArray, ", ")
 }
