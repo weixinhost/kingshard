@@ -7,7 +7,7 @@ kingshard是一个由Go开发高性能MySQL Proxy项目，kingshard在满足基�
 ## 主要功能：
 
 ### 1. 基础功能
-
+    
 - 支持SQL读写分离。
 - 支持透明的MySQL连接池，不必每次新建连接。
 - 支持平滑上线DB或下线DB，前端应用无感知。
