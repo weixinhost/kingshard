@@ -52,6 +52,10 @@ users:
 log_level : debug
 #log_sql: off
 proxy_charset: utf8
+#log_memory 当query的数据集超过该值时，则输出到日志。 0 表示关闭，单位为byte
+log_memory: 0
+#max_memory 当query的数据超过该值时，则报错（Mysql协议）。0 表示关闭，单位为byte
+max_memory: 0
 
 nodes :
 -
