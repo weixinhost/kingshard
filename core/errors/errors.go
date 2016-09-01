@@ -67,4 +67,5 @@ var (
 	ErrDateRangeCount   = errors.New("date range count is not equal")
 	ErrSlaveExist       = errors.New("slave has exist")
 	ErrSlaveNotExist    = errors.New("slave has not exist")
+	ErrMemoryOverflow   = errors.New("result data size overflow max_memory")
 )

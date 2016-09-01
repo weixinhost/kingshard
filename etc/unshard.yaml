@@ -21,7 +21,7 @@ users:
  password: pass_4
 
 log_level : debug
-#log_sql: off
+log_sql: on
 proxy_charset: utf8
 
 nodes :

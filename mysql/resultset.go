@@ -233,6 +233,10 @@ func (p RowData) ParseBinary(f []*Field) ([]interface{}, error) {
 	return data, nil
 }
 
+func (p RowData) Size() int {
+	return len(p)
+}
+
 type Result struct {
 	Status uint16
 
@@ -246,12 +250,21 @@ type Resultset struct {
 	Fields     []*Field
 	FieldNames map[string]int
 	Values     [][]interface{}
-
-	RowDatas []RowData
+	RowDatas   []RowData
 }
 
 func (r *Resultset) RowNumber() int {
 	return len(r.Values)
+}
+
+func (r *Resultset) Size() int {
+	size := 0
+	if r.RowDatas != nil {
+		for _, v := range r.RowDatas {
+			size += v.Size()
+		}
+	}
+	return size
 }
 
 func (r *Resultset) ColumnNumber() int {

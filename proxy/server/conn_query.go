@@ -210,6 +210,23 @@ func (c *ClientConn) executeInNode(conn *backend.BackendConn, sql string, args [
 		)
 	}
 
+	dataSize := r.Size()
+	if c.proxy.cfg.MaxMemoryLog > 0 && c.proxy.cfg.MaxMemoryLog < dataSize {
+		golog.OutputSql(state, "%.1fms - %s->%s:%s %s | %d %d bytes",
+			execTime,
+			c.c.RemoteAddr(),
+			conn.GetAddr(),
+			sql,
+			"NOT_ALLOW_DATA_SIZE",
+			c.proxy.cfg.MaxMemoryLog,
+			dataSize,
+		)
+	}
+
+	if c.proxy.cfg.MaxMemoryKill > 0 && c.proxy.cfg.MaxMemoryKill < dataSize {
+		err = errors.ErrMemoryOverflow
+	}
+
 	if err != nil {
 		return nil, err
 	}
