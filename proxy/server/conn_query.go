@@ -191,12 +191,14 @@ func (c *ClientConn) getShardConns(fromSlave bool, plan *router.Plan) (map[strin
 
 func (c *ClientConn) executeInNode(conn *backend.BackendConn, sql string, args []interface{}) ([]*mysql.Result, error) {
 	var state string
+	dataSize := 0
 	startTime := time.Now().UnixNano()
 	r, err := conn.Execute(sql, args...)
 	if err != nil {
 		state = "ERROR"
 	} else {
 		state = "OK"
+		dataSize = r.Size()
 	}
 	execTime := float64(time.Now().UnixNano()-startTime) / float64(time.Millisecond)
 	if strings.ToLower(c.proxy.logSql[c.proxy.logSqlIndex]) != golog.LogSqlOff &&
@@ -210,7 +212,6 @@ func (c *ClientConn) executeInNode(conn *backend.BackendConn, sql string, args [
 		)
 	}
 
-	dataSize := r.Size()
 	if c.proxy.cfg.MaxMemoryLog > 0 && c.proxy.cfg.MaxMemoryLog < dataSize {
 		golog.OutputSql(state, "%.1fms - %s->%s:%s %s | %d %d bytes",
 			execTime,
