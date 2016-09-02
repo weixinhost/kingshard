@@ -259,7 +259,7 @@ func (r *Resultset) RowNumber() int {
 
 func (r *Resultset) Size() int {
 	size := 0
-	if r.RowDatas != nil {
+	if r != nil && r.RowDatas != nil {
 		for _, v := range r.RowDatas {
 			size += v.Size()
 		}
